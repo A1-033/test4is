@@ -26,7 +26,17 @@ import metadata from './block.json';
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-registration/
  */
-registerBlockType( metadata.name, {
+registerBlockType( 'my-theme/articles-slider', {
+	apiVersion: 2,
+	title: '4is_slider',
+	icon: 'slides',
+	category: 'widgets',
+	attributes: {
+		category: {
+			type: 'string',
+			default: 'all',
+		},
+	},
 	/**
 	 * @see ./edit.js
 	 */

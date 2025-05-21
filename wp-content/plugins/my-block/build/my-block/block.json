@@ -4,7 +4,7 @@
   "name": "create-block/my-block",
   "version": "0.1.0",
   "title": "my-block",
-  "category": "widgets",
+  "category": "theme",
   "icon": "visibility",
   "description": "my first block",
   "example": {},
