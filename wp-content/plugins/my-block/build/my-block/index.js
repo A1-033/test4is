@@ -30,15 +30,8 @@ const {
   useEffect
 } = wp.element;
 const {
-  SelectControl,
-  Spinner
+  SelectControl
 } = wp.components;
-const {
-  useSelect
-} = wp.data;
-const {
-  __
-} = wp.i18n;
 function Edit({
   attributes,
   setAttributes
@@ -47,70 +40,55 @@ function Edit({
     selectedCategory
   } = attributes;
   const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Получаем все рубрики через WordPress Data API
-  const categories = useSelect(select => {
-    const terms = select('core').getEntityRecords('taxonomy', 'category', {
-      per_page: -1
+  // Загрузка категорий
+  useEffect(() => {
+    wp.apiFetch({
+      path: '/wp/v2/categories?per_page=-1'
+    }).then(cats => {
+      const allCategories = [{
+        value: 0,
+        label: 'Все категории'
+      }, ...cats.map(cat => ({
+        value: cat.id,
+        label: cat.name
+      }))];
+      setCategories(allCategories);
     });
-    if (!terms) return [];
-    return [{
-      value: 0,
-      label: __('All Categories', 'text-domain')
-    }, ...terms.map(term => ({
-      value: term.id,
-      label: term.name
-    }))];
   }, []);
 
-  // Загрузка постов при изменении рубрики
+  // Загрузка постов
   useEffect(() => {
     setLoading(true);
-    let apiPath = '/wp/v2/posts?per_page=5&_fields=id,title,link';
-    if (selectedCategory && selectedCategory !== 0) {
-      apiPath += `&categories=${selectedCategory}`;
+    let url = '/wp/v2/posts?per_page=3';
+    if (selectedCategory) {
+      url += `&categories=${selectedCategory}`;
     }
     wp.apiFetch({
-      path: apiPath
+      path: url
     }).then(data => {
       setPosts(data);
-      setLoading(false);
-    }).catch(error => {
-      console.error('Error fetching posts:', error);
       setLoading(false);
     });
   }, [selectedCategory]);
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", {
-    className: "category-posts-block",
     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(SelectControl, {
-      label: __('Select Category', 'text-domain'),
+      label: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0440\u0443\u0431\u0440\u0438\u043A\u0443",
       value: selectedCategory,
       options: categories,
-      onChange: newCategory => setAttributes({
-        selectedCategory: Number(newCategory)
+      onChange: value => setAttributes({
+        selectedCategory: Number(value)
       })
-    }), loading ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", {
-      style: {
-        textAlign: 'center'
-      },
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)(Spinner, {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", {
-        children: __('Loading posts...', 'text-domain')
-      })]
+    }), loading ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", {
+      children: "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430..."
     }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", {
-      className: "posts-list",
-      children: posts.length > 0 ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("ul", {
-        children: posts.map(post => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("li", {
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("a", {
-            href: post.link,
-            target: "_blank",
-            rel: "noopener noreferrer",
-            children: post.title.rendered
-          })
-        }, post.id))
-      }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("p", {
-        children: __('No posts found in this category.', 'text-domain')
-      })
+      children: posts.map(post => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("div", {
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("h4", {
+          children: post.title.rendered
+        })
+      }, post.id))
     })]
   });
 }

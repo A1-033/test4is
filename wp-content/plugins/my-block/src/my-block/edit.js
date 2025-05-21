@@ -1,76 +1,57 @@
 const { useState, useEffect } = wp.element;
-const { SelectControl, Spinner } = wp.components;
-const { useSelect } = wp.data;
-const { __ } = wp.i18n;
+const { SelectControl } = wp.components;
 
 export default function Edit({ attributes, setAttributes }) {
 	const { selectedCategory } = attributes;
 	const [posts, setPosts] = useState([]);
-	const [loading, setLoading] = useState(false);
+	const [categories, setCategories] = useState([]);
+	const [loading, setLoading] = useState(true);
 
-	// Получаем все рубрики через WordPress Data API
-	const categories = useSelect((select) => {
-		const terms = select('core').getEntityRecords('taxonomy', 'category', { per_page: -1 });
-		if (!terms) return [];
-
-		return [
-			{ value: 0, label: __('All Categories', 'text-domain') },
-			...terms.map(term => ({
-				value: term.id,
-				label: term.name
-			}))
-		];
+	// Загрузка категорий
+	useEffect(() => {
+		wp.apiFetch({ path: '/wp/v2/categories?per_page=-1' })
+			.then(cats => {
+				const allCategories = [
+					{ value: 0, label: 'Все категории' },
+					...cats.map(cat => ({ value: cat.id, label: cat.name }))
+				];
+				setCategories(allCategories);
+			});
 	}, []);
 
-	// Загрузка постов при изменении рубрики
+	// Загрузка постов
 	useEffect(() => {
 		setLoading(true);
-
-		let apiPath = '/wp/v2/posts?per_page=5&_fields=id,title,link';
-		if (selectedCategory && selectedCategory !== 0) {
-			apiPath += `&categories=${selectedCategory}`;
+		let url = '/wp/v2/posts?per_page=3';
+		if (selectedCategory) {
+			url += `&categories=${selectedCategory}`;
 		}
 
-		wp.apiFetch({ path: apiPath })
+		wp.apiFetch({ path: url })
 			.then(data => {
 				setPosts(data);
-				setLoading(false);
-			})
-			.catch(error => {
-				console.error('Error fetching posts:', error);
 				setLoading(false);
 			});
 	}, [selectedCategory]);
 
 	return (
-		<div className="category-posts-block">
+		<div>
 			<SelectControl
-				label={__('Select Category', 'text-domain')}
+				label="Выберите рубрику"
 				value={selectedCategory}
 				options={categories}
-				onChange={(newCategory) => setAttributes({ selectedCategory: Number(newCategory) })}
+				onChange={value => setAttributes({ selectedCategory: Number(value) })}
 			/>
 
 			{loading ? (
-				<div style={{ textAlign: 'center' }}>
-					<Spinner />
-					<p>{__('Loading posts...', 'text-domain')}</p>
-				</div>
+				<p>Загрузка...</p>
 			) : (
-				<div className="posts-list">
-					{posts.length > 0 ? (
-						<ul>
-							{posts.map(post => (
-								<li key={post.id}>
-									<a href={post.link} target="_blank" rel="noopener noreferrer">
-										{post.title.rendered}
-									</a>
-								</li>
-							))}
-						</ul>
-					) : (
-						<p>{__('No posts found in this category.', 'text-domain')}</p>
-					)}
+				<div>
+					{posts.map(post => (
+						<div key={post.id}>
+							<h4>{post.title.rendered}</h4>
+						</div>
+					))}
 				</div>
 			)}
 		</div>
