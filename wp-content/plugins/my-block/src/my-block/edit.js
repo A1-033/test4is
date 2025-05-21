@@ -1,38 +1,78 @@
-/**
- * Retrieves the translation of text.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-i18n/
- */
-import { __ } from '@wordpress/i18n';
+const { useState, useEffect } = wp.element;
+const { SelectControl, Spinner } = wp.components;
+const { useSelect } = wp.data;
+const { __ } = wp.i18n;
 
-/**
- * React hook that is used to mark the block wrapper element.
- * It provides all the necessary props like the class name.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
- */
-import { useBlockProps } from '@wordpress/block-editor';
+export default function Edit({ attributes, setAttributes }) {
+	const { selectedCategory } = attributes;
+	const [posts, setPosts] = useState([]);
+	const [loading, setLoading] = useState(false);
 
-/**
- * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
- * Those files can contain any CSS code that gets applied to the editor.
- *
- * @see https://www.npmjs.com/package/@wordpress/scripts#using-css
- */
-import './editor.scss';
+	// Получаем все рубрики через WordPress Data API
+	const categories = useSelect((select) => {
+		const terms = select('core').getEntityRecords('taxonomy', 'category', { per_page: -1 });
+		if (!terms) return [];
 
-/**
- * The edit function describes the structure of your block in the context of the
- * editor. This represents what the editor will render when the block is used.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-edit-save/#edit
- *
- * @return {Element} Element to render.
- */
-export default function Edit() {
+		return [
+			{ value: 0, label: __('All Categories', 'text-domain') },
+			...terms.map(term => ({
+				value: term.id,
+				label: term.name
+			}))
+		];
+	}, []);
+
+	// Загрузка постов при изменении рубрики
+	useEffect(() => {
+		setLoading(true);
+
+		let apiPath = '/wp/v2/posts?per_page=5&_fields=id,title,link';
+		if (selectedCategory && selectedCategory !== 0) {
+			apiPath += `&categories=${selectedCategory}`;
+		}
+
+		wp.apiFetch({ path: apiPath })
+			.then(data => {
+				setPosts(data);
+				setLoading(false);
+			})
+			.catch(error => {
+				console.error('Error fetching posts:', error);
+				setLoading(false);
+			});
+	}, [selectedCategory]);
+
 	return (
-		<p { ...useBlockProps() }>
-			{ __( 'my-block – hello from the editor!', 'my-block' ) }
-		</p>
+		<div className="category-posts-block">
+			<SelectControl
+				label={__('Select Category', 'text-domain')}
+				value={selectedCategory}
+				options={categories}
+				onChange={(newCategory) => setAttributes({ selectedCategory: Number(newCategory) })}
+			/>
+
+			{loading ? (
+				<div style={{ textAlign: 'center' }}>
+					<Spinner />
+					<p>{__('Loading posts...', 'text-domain')}</p>
+				</div>
+			) : (
+				<div className="posts-list">
+					{posts.length > 0 ? (
+						<ul>
+							{posts.map(post => (
+								<li key={post.id}>
+									<a href={post.link} target="_blank" rel="noopener noreferrer">
+										{post.title.rendered}
+									</a>
+								</li>
+							))}
+						</ul>
+					) : (
+						<p>{__('No posts found in this category.', 'text-domain')}</p>
+					)}
+				</div>
+			)}
+		</div>
 	);
 }
