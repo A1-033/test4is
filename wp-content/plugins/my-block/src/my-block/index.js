@@ -18,8 +18,11 @@ import './style.scss';
  * Internal dependencies
  */
 import Edit from './edit';
+
 import save from './save';
 import metadata from './block.json';
+
+
 
 /**
  * Every block starts by registering a new block type definition.
@@ -32,10 +35,14 @@ registerBlockType( 'my-theme/articles-slider', {
 	icon: 'slides',
 	category: 'widgets',
 	attributes: {
-		category: {
-			type: 'string',
-			default: 'all',
+		selectedCategory: {
+			type: 'number',
+			default: 0
 		},
+		slidesPerView: {
+			type: 'number',
+			default: 3
+		}
 	},
 	/**
 	 * @see ./edit.js
@@ -45,5 +52,5 @@ registerBlockType( 'my-theme/articles-slider', {
 	/**
 	 * @see ./save.js
 	 */
-	save,
+	save: () => null // Для динамического блока
 } );

@@ -1,59 +1,54 @@
-const { useState, useEffect } = wp.element;
-const { SelectControl } = wp.components;
+import { useSelect } from '@wordpress/data';
+import { store as coreDataStore } from '@wordpress/core-data';
 
-export default function Edit({ attributes, setAttributes }) {
-	const { selectedCategory } = attributes;
-	const [posts, setPosts] = useState([]);
-	const [categories, setCategories] = useState([]);
-	const [loading, setLoading] = useState(true);
+const Edit = () => {
+	// Получаем 5 последних записей
+	const posts = useSelect(
+		(select) => select(coreDataStore).getEntityRecords(
+			'postType',
+			'post',
+			{
+				per_page: 5,
+				_embed: true // Для получения изображений
+			}
+		),
+		[]
+	);
 
-	// Загрузка категорий
-	useEffect(() => {
-		wp.apiFetch({ path: '/wp/v2/categories?per_page=-1' })
-			.then(cats => {
-				const allCategories = [
-					{ value: 0, label: 'Все категории' },
-					...cats.map(cat => ({ value: cat.id, label: cat.name }))
-				];
-				setCategories(allCategories);
-			});
-	}, []);
-
-	// Загрузка постов
-	useEffect(() => {
-		setLoading(true);
-		let url = '/wp/v2/posts?per_page=3';
-		if (selectedCategory) {
-			url += `&categories=${selectedCategory}`;
-		}
-
-		wp.apiFetch({ path: url })
-			.then(data => {
-				setPosts(data);
-				setLoading(false);
-			});
-	}, [selectedCategory]);
+	if (posts.length === 0) {
+		return <p>Записи не найдены</p>;
+	}
 
 	return (
-		<div>
-			<SelectControl
-				label="Выберите рубрику"
-				value={selectedCategory}
-				options={categories}
-				onChange={value => setAttributes({ selectedCategory: Number(value) })}
-			/>
-
-			{loading ? (
-				<p>Загрузка...</p>
-			) : (
-				<div>
-					{posts.map(post => (
-						<div key={post.id}>
-							<h4>{post.title.rendered}</h4>
+		<div className="recent-posts-block">
+			<h3 className="recent-posts-title">Последние записи</h3>
+			<ul className="recent-posts-list">
+				{posts.map((post) => (
+					<li key={post.id} className="recent-post-item">
+						{post._embedded?.['wp:featuredmedia']?.[0] && (
+							<img
+								src={post._embedded['wp:featuredmedia'][0].source_url}
+								alt={post.title.rendered}
+								className="recent-post-image"
+							/>
+						)}
+						<h4 className="recent-post-title">
+							<a href={post.link} target="_blank" rel="noopener noreferrer">
+								{post.title.rendered}
+							</a>
+						</h4>
+						<div
+							className="recent-post-excerpt"
+							dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }}
+						/>
+						<div className="recent-post-date">
+							{new Date(post.date).toLocaleDateString()}
 						</div>
-					))}
-				</div>
-			)}
+					</li>
+				))}
+			</ul>
 		</div>
 	);
-}
+};
+
+export default Edit;

@@ -57,3 +57,37 @@ function create_block_my_block_block_init() {
 	}
 }
 add_action( 'init', 'create_block_my_block_block_init' );
+
+function enqueue_swiper_assets() {
+	// Регистрируем Swiper только на бэкенде (редакторе)
+	wp_register_script(
+		'swiper-js',
+		'https://unpkg.com/swiper@8/swiper-bundle.min.js',
+		array(),
+		'8.4.5',
+		true
+	);
+
+	wp_register_style(
+		'swiper-css',
+		'https://unpkg.com/swiper@8/swiper-bundle.min.css',
+		array(),
+		'8.4.5'
+	);
+
+	// Регистрируем скрипт блока
+	wp_register_script(
+		'your-plugin-swiper-block',
+		plugins_url('build/index.js', __FILE__),
+		array('swiper-js', 'wp-blocks', 'wp-element', 'wp-editor'),
+		filemtime(plugin_dir_path(__FILE__) . 'build/index.js')
+	);
+
+	// Подключаем только когда блок используется
+	if (has_block('your-plugin/swiper-posts')) {
+		wp_enqueue_script('swiper-js');
+		wp_enqueue_style('swiper-css');
+	}
+}
+add_action('wp_enqueue_scripts', 'enqueue_swiper_assets');
+add_action('admin_enqueue_scripts', 'enqueue_swiper_assets');
