@@ -1,0 +1,14 @@
+{
+  "apiVersion": 2,
+  "name": "mytheme/gutendberg-block",
+  "title": "my custom block",
+  "category": "widjets",
+  "icon": "smiley",
+  "description": "Простой пример кастомного блока Гутенберга",
+  "keywords": ["блок", "пример", "тема"],
+  "version": "1.0.0",
+  "textdomain": "ваша-тема",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./editor.css",
+  "style": "file:./style.css"
+}
